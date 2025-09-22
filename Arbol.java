@@ -1,64 +1,152 @@
 package src.Old;
+
+import java.util.*;
+
 public class Arbol {
-    private Nodo raiz;
+    Nodo raiz;
 
-      public Arbol() {
-          this.raiz = null;
-      }
+    public Arbol(Nodo raiz){
+        this.raiz = raiz;
+    }
 
-      public boolean vacio() {
-          return raiz == null;
-      }
+    // 🔹 Búsqueda en Anchura (BFS)
+    public Nodo realizarBusquedaEnAnchura(String objetivo){
+        HashSet<String> visitados = new HashSet<>();
+        Queue<Nodo> cola = new LinkedList<>();
+        cola.add(raiz);
+        visitados.add(raiz.estado);
 
-      public void insertar(String nombre) {
-          raiz = insertarRec(raiz, nombre);
-      }
+        while (!cola.isEmpty()) {
+            Nodo actual = cola.poll();
+            if (actual.estado.equals(objetivo)) {
+                return actual;
+            }
+            for (String sucesor : Nodo.obtenerSucesores(actual.estado)) {
+                if (!visitados.contains(sucesor)) {
+                    Nodo hijo = new Nodo(sucesor, actual);
+                    cola.add(hijo);
+                    visitados.add(sucesor);
+                }
+            }
+        }
+        return null;
+    }
 
-      // Insertar
-      private Nodo insertarRec(Nodo actual, String nombre) {
-          if (actual == null) {
-              return new Nodo(nombre);
-          }
+    // 🔹 Búsqueda en Profundidad (DFS)
+    public Nodo busquedaProfundidad(String objetivo){
+        HashSet<String> visitados = new HashSet<>();
+        Stack<Nodo> pila = new Stack<>();
+        pila.push(raiz);
+        visitados.add(raiz.estado);
 
-          if (nombre.compareTo(actual.nombre) < 0) {
-              actual.izquierda = insertarRec(actual.izquierda, nombre);
-          } else if (nombre.compareTo(actual.nombre) > 0) {
-              actual.derecha = insertarRec(actual.derecha, nombre);
-          }
+        while (!pila.isEmpty()) {
+            Nodo actual = pila.pop();
+            if (actual.estado.equals(objetivo)) {
+                return actual;
+            }
+            for (String sucesor : Nodo.obtenerSucesores(actual.estado)) {
+                if (!visitados.contains(sucesor)) {
+                    Nodo hijo = new Nodo(sucesor, actual);
+                    pila.push(hijo);
+                    visitados.add(sucesor);
+                }
+            }
+        }
+        return null;
+    }
 
-          return actual;
-      }
+    // 🔹 Búsqueda de Costo Uniforme (UCS)
+    public Nodo busquedaCostoUniforme(String objetivo){
+        HashSet<String> visitados = new HashSet<>();
+        PriorityQueue<Nodo> frontera = new PriorityQueue<>(Comparator.comparingInt(n -> n.costo));
 
-      // Buscar
-      public Nodo buscarNodo(String nombre) {
-          return buscarRec(raiz, nombre);
-      }
-      private Nodo buscarRec(Nodo actual, String nombre) {
-          if (actual == null || actual.nombre.equals(nombre)) {
-              return actual;
-          }
+        raiz.costo = 0;
+        frontera.add(raiz);
 
-          if (nombre.compareTo(actual.nombre) < 0) {
-              return buscarRec(actual.izquierda, nombre);
-          } else {
-              return buscarRec(actual.derecha, nombre);
-          }
-      }
+        while (!frontera.isEmpty()) {
+            Nodo actual = frontera.poll();
 
-      // Imprimir
-      public void inorden() {
-          System.out.println("Raíz: " + (raiz != null ? raiz.nombre : "Arbol vacío"));
-          inordenRec(raiz);
-          System.out.println();
-      }
+            if (actual.estado.equals(objetivo)) {
+                return actual;
+            }
+            if (!visitados.contains(actual.estado)) {
+                visitados.add(actual.estado);
+                for (String sucesor : Nodo.obtenerSucesores(actual.estado)) {
+                    if (!visitados.contains(sucesor)) {
+                        Nodo hijo = new Nodo(sucesor, actual);
+                        hijo.costo = actual.costo + 1; // cada movimiento cuesta 1
+                        frontera.add(hijo);
+                    }
+                }
+            }
+        }
+        return null;
+    }
 
-      private void inordenRec(Nodo actual) {
-          if (actual != null) {
-              inordenRec(actual.izquierda);
-              System.out.print(actual.nombre + " ");
-              inordenRec(actual.derecha);
-          }
-      }
+    // 🔹 Búsqueda en Profundidad Limitada (DLS)
+    private Nodo busquedaLimitada(Nodo nodo, String objetivo, int limite, HashSet<String> visitados) {
+        if (nodo.estado.equals(objetivo)) {
+            return nodo;
+        }
+        if (limite <= 0) {
+            return null;
+        }
 
-      
+        visitados.add(nodo.estado);
+
+        for (String sucesor : Nodo.obtenerSucesores(nodo.estado)) {
+            if (!visitados.contains(sucesor)) {
+                Nodo hijo = new Nodo(sucesor, nodo);
+                Nodo resultado = busquedaLimitada(hijo, objetivo, limite - 1, visitados);
+                if (resultado != null) {
+                    return resultado;
+                }
+            }
+        }
+        return null;
+    }
+
+    // 🔹 Búsqueda en Profundidad Iterativa (IDDFS)
+    public Nodo busquedaProfundidadIterativa(String objetivo, int maxProfundidad) {
+        for (int limite = 0; limite <= maxProfundidad; limite++) {
+            HashSet<String> visitados = new HashSet<>();
+            Nodo resultado = busquedaLimitada(raiz, objetivo, limite, visitados);
+            if (resultado != null) {
+                return resultado;
+            }
+        }
+        return null;
+    }
+
+    // 🔹 Mostrar el camino desde el inicial hasta la solución
+    public void mostrarCamino(Nodo solucion) {
+        if (solucion == null) {
+            System.out.println("No hay solución.");
+            return;
+        }
+        List<String> camino = new ArrayList<>();
+        Nodo actual = solucion;
+        while (actual != null) {
+            camino.add(actual.estado);
+            actual = actual.padre;
+        }
+        Collections.reverse(camino);
+
+        System.out.println("\nMovimientos:");
+        for (String estado : camino) {
+            imprimirTablero(estado);
+            System.out.println("________");
+        }
+    }
+
+    // 🔹 Imprimir el tablero en formato 3x3
+    private void imprimirTablero(String estado) {
+        for (int i = 0; i < estado.length(); i++) {
+            char c = estado.charAt(i);
+            System.out.print((c == ' ' ? "x" : c) + " ");
+            if ((i + 1) % 3 == 0) {
+                System.out.println();
+            }
+        }
+    }
 }
